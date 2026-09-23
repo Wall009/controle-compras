@@ -208,6 +208,7 @@
 
 <script>
 const API_URL = "https://webhook.servidorwall.online/webhook/cc-api";
+const API_KEY = "c0a008b042915317faca4b73e2fc9c1356987a6d89ff6477";
 
 let osData = [];
 let pedidoData = [];
@@ -290,7 +291,7 @@ function scrollToSection(nome){
 async function carregarDados(){
   document.getElementById('lastUpdate').textContent = 'atualizando…';
   try{
-    const res = await fetch(API_URL);
+    const res = await fetch(API_URL, { headers: { 'x-api-key': API_KEY } });
     const data = await res.json();
 
     document.getElementById('c_manutencao').textContent = data.cards.pedidos_manutencao ?? '–';
