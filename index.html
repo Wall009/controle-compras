@@ -122,6 +122,42 @@
 
   ::-webkit-scrollbar{width:8px;height:8px;}
   ::-webkit-scrollbar-thumb{background:#c9d6cf;border-radius:8px;}
+
+  /* ===== BOTÃO NOVO + MODAL ===== */
+  .btn-nova{
+    border:none;background:var(--verde);color:#fff;padding:9px 14px;border-radius:8px;
+    font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
+  }
+  .btn-nova:active{transform:scale(.97);}
+  tbody tr{cursor:pointer;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(14,31,22,.55);z-index:200;
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .modal-overlay.open{display:flex;}
+  @media(min-width:640px){.modal-overlay{align-items:center;}}
+  .modal-box{
+    background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:88vh;
+    overflow-y:auto;padding:22px;animation:slideUp .18s ease-out;
+  }
+  @media(min-width:640px){.modal-box{border-radius:16px;}}
+  @keyframes slideUp{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-box h3{margin:0 0 4px;font-size:17px;color:var(--verde-escuro);}
+  .modal-box .modal-sub{font-size:12.5px;color:var(--texto-suave);margin:0 0 18px;}
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--texto-suave);margin-bottom:5px;}
+  .field input, .field select, .field textarea{
+    width:100%;padding:10px 11px;border:1px solid var(--borda);border-radius:8px;font-size:14px;
+    background:#fafbfa;font-family:inherit;
+  }
+  .field textarea{resize:vertical;min-height:60px;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions button{flex:1;padding:11px;border-radius:9px;font-size:14px;font-weight:700;border:none;cursor:pointer;}
+  .btn-cancelar{background:#eef1ef;color:var(--texto-suave);}
+  .btn-salvar{background:var(--verde);color:#fff;}
+  .btn-salvar:disabled{opacity:.6;}
+  .modal-erro{background:#fde3e3;color:#a13030;padding:9px 12px;border-radius:8px;font-size:12.5px;margin-bottom:12px;display:none;}
 </style>
 </head>
 <body>
@@ -169,6 +205,7 @@
           <option value="CANCELADA">Cancelada</option>
           <option value="OUTRO_DEPARTAMENTO">Outro departamento</option>
         </select>
+        <button class="btn-nova" onclick="abrirModalOS()">+ Nova OS</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -188,6 +225,7 @@
           <option value="MANUTENÇÃO">Manutenção</option>
           <option value="SGI">SGI</option>
         </select>
+        <button class="btn-nova" onclick="abrirModalPedido()">+ Novo Pedido</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -196,6 +234,19 @@
         </table>
       </div>
       <div id="pedidoEmpty" class="empty" style="display:none;">Nenhum pedido encontrado.</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <h3 id="modalTitulo">Nova OS</h3>
+    <p class="modal-sub" id="modalSub">Preencha os dados abaixo.</p>
+    <div class="modal-erro" id="modalErro"></div>
+    <form id="modalForm"></form>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn-salvar" id="btnSalvarModal" onclick="salvarModal()">Salvar</button>
     </div>
   </div>
 </div>
@@ -244,7 +295,7 @@ function renderOS(){
   const tbody = document.getElementById('osTableBody');
   document.getElementById('osEmpty').style.display = filtrado.length ? 'none' : 'block';
   tbody.innerHTML = filtrado.map(o=>`
-    <tr>
+    <tr onclick='abrirModalOS(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
       <td><strong>${o.numero_os||'—'}</strong></td>
       <td>${badgeOS(o.status)}</td>
       <td>${o.situacao||'—'}</td>
@@ -266,7 +317,7 @@ function renderPedidos(){
   const tbody = document.getElementById('pedidoTableBody');
   document.getElementById('pedidoEmpty').style.display = filtrado.length ? 'none' : 'block';
   tbody.innerHTML = filtrado.map(p=>`
-    <tr>
+    <tr onclick='abrirModalPedido(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
       <td><strong>${p.numero_pedido||'—'}</strong></td>
       <td>${p.setor_responsavel||'—'}</td>
       <td>${p.status_pedido||'—'}</td>
@@ -310,6 +361,124 @@ async function carregarDados(){
   }catch(err){
     document.getElementById('lastUpdate').textContent = 'erro ao carregar';
     console.error(err);
+  }
+}
+
+// ===== MODAL: criar/editar OS e Pedido =====
+let modalTipo = null;   // 'os' | 'pedido'
+let modalModo = null;   // 'create' | 'update'
+
+function campoHTML(label, id, valor, tipo, opcoes){
+  valor = valor==null ? '' : valor;
+  if(tipo==='select'){
+    const opts = opcoes.map(o=>`<option value="${o}" ${o===valor?'selected':''}>${o||'—'}</option>`).join('');
+    return `<div class="field"><label>${label}</label><select id="${id}">${opts}</select></div>`;
+  }
+  if(tipo==='textarea'){
+    return `<div class="field"><label>${label}</label><textarea id="${id}">${valor}</textarea></div>`;
+  }
+  if(tipo==='date'){
+    const v = valor ? String(valor).substring(0,10) : '';
+    return `<div class="field"><label>${label}</label><input type="date" id="${id}" value="${v}"></div>`;
+  }
+  return `<div class="field"><label>${label}</label><input type="text" id="${id}" value="${valor}"></div>`;
+}
+
+function abrirModalOS(os){
+  modalTipo = 'os';
+  modalModo = os ? 'update' : 'create';
+  document.getElementById('modalTitulo').textContent = os ? `Editar OS ${os.numero_os}` : 'Nova OS';
+  document.getElementById('modalSub').textContent = os ? 'Altere os campos e salve.' : 'Preencha os dados da nova ordem de serviço.';
+  document.getElementById('modalErro').style.display = 'none';
+  const f = os || {};
+  document.getElementById('modalForm').innerHTML = [
+    campoHTML('Número da OS','f_numero_os', f.numero_os, os?'text-disabled':'text'),
+    campoHTML('Status','f_status', f.status||'ABERTA', 'select', ['ABERTA','FECHADA','CANCELADA','OUTRO_DEPARTAMENTO']),
+    campoHTML('Situação','f_situacao', f.situacao, 'text'),
+    campoHTML('Setor Responsável','f_setor_responsavel', f.setor_responsavel, 'text'),
+    campoHTML('Placa','f_placa', f.placa, 'text'),
+    campoHTML('Data de Abertura','f_data_abertura', f.data_abertura, 'date'),
+    campoHTML('Observação','f_observacao', f.observacao, 'textarea')
+  ].join('');
+  if(os){ document.getElementById('f_numero_os').disabled = true; }
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function abrirModalPedido(pedido){
+  modalTipo = 'pedido';
+  modalModo = pedido ? 'update' : 'create';
+  document.getElementById('modalTitulo').textContent = pedido ? `Editar Pedido ${pedido.numero_pedido}` : 'Novo Pedido';
+  document.getElementById('modalSub').textContent = pedido ? 'Altere os campos e salve.' : 'Preencha os dados do novo pedido de compra.';
+  document.getElementById('modalErro').style.display = 'none';
+  const f = pedido || {};
+  document.getElementById('modalForm').innerHTML = [
+    campoHTML('Número do Pedido','f_numero_pedido', f.numero_pedido, pedido?'text-disabled':'text'),
+    campoHTML('Setor Responsável','f_setor_responsavel', f.setor_responsavel||'COMPRAS', 'select', ['COMPRAS','MANUTENÇÃO','SGI']),
+    campoHTML('Status','f_status_pedido', f.status_pedido||'ABERTO', 'text'),
+    campoHTML('Item do Pedido','f_item_pedido', f.item_pedido, 'textarea'),
+    campoHTML('Data de Abertura','f_data_abertura', f.data_abertura, 'date')
+  ].join('');
+  if(pedido){ document.getElementById('f_numero_pedido').disabled = true; }
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function fecharModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+async function salvarModal(){
+  const erroBox = document.getElementById('modalErro');
+  erroBox.style.display = 'none';
+  const btn = document.getElementById('btnSalvarModal');
+
+  let action, body;
+  if(modalTipo === 'os'){
+    action = modalModo === 'create' ? 'create_os' : 'update_os';
+    body = {
+      action,
+      numero_os: document.getElementById('f_numero_os').value.trim(),
+      status: document.getElementById('f_status').value,
+      situacao: document.getElementById('f_situacao').value.trim(),
+      setor_responsavel: document.getElementById('f_setor_responsavel').value.trim(),
+      placa: document.getElementById('f_placa').value.trim(),
+      data_abertura: document.getElementById('f_data_abertura').value || null,
+      observacao: document.getElementById('f_observacao').value.trim()
+    };
+  } else {
+    action = modalModo === 'create' ? 'create_pedido' : 'update_pedido';
+    body = {
+      action,
+      numero_pedido: document.getElementById('f_numero_pedido').value.trim(),
+      setor_responsavel: document.getElementById('f_setor_responsavel').value.trim(),
+      status_pedido: document.getElementById('f_status_pedido').value.trim(),
+      item_pedido: document.getElementById('f_item_pedido').value.trim(),
+      data_abertura: document.getElementById('f_data_abertura').value || null
+    };
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  try{
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(!res.ok){
+      erroBox.textContent = data.erro || 'Não foi possível salvar.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    fecharModal();
+    carregarDados();
+  }catch(err){
+    erroBox.textContent = 'Erro de conexão ao salvar.';
+    erroBox.style.display = 'block';
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Salvar';
   }
 }
 
