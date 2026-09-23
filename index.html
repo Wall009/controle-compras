@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle de Compras | AA Alternativa</title>
+<style>
+  :root{
+    --verde:#00893B;
+    --verde-claro:#7AB42B;
+    --verde-escuro:#046a2e;
+    --bg:#f4f6f5;
+    --card-bg:#ffffff;
+    --texto:#1f2a24;
+    --texto-suave:#6b7a72;
+    --borda:#e3e8e5;
+    --sombra:0 2px 10px rgba(0,0,0,.06);
+    --radius:14px;
+    --sidebar-w:230px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--texto);}
+
+  /* ===== TOPBAR ===== */
+  .topbar{
+    position:fixed;top:0;left:0;right:0;height:64px;background:#fff;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 20px;box-shadow:var(--sombra);z-index:50;
+  }
+  .topbar .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--verde-escuro);font-size:17px;}
+  .topbar .brand .logo-dot{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--verde),var(--verde-claro));display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800;}
+  .topbar .refresh-info{font-size:12px;color:var(--texto-suave);}
+  .topbar button.refresh{
+    border:none;background:var(--verde);color:#fff;padding:8px 14px;border-radius:8px;
+    font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;
+  }
+  .topbar button.refresh:active{transform:scale(.97);}
+
+  /* ===== SIDEBAR (desktop) ===== */
+  .sidebar{
+    position:fixed;top:64px;left:0;bottom:0;width:var(--sidebar-w);
+    background:#0e1f16;padding:22px 14px;display:none;flex-direction:column;gap:4px;
+  }
+  .sidebar a{
+    color:#c9d6cf;text-decoration:none;padding:11px 14px;border-radius:9px;font-size:14px;
+    display:flex;align-items:center;gap:10px;font-weight:500;
+  }
+  .sidebar a.active,.sidebar a:hover{background:rgba(122,180,43,.18);color:#fff;}
+  .sidebar .tag{margin-top:auto;font-size:11px;color:#6f8478;padding:10px 14px;}
+
+  /* ===== LAYOUT ===== */
+  .content{padding:84px 16px 90px;max-width:1200px;margin:0 auto;}
+  @media(min-width:900px){
+    .sidebar{display:flex;}
+    .content{margin-left:var(--sidebar-w);padding:84px 32px 40px;max-width:1100px;}
+  }
+
+  .page-title{font-size:20px;font-weight:700;margin:0 0 4px;color:var(--verde-escuro);}
+  .page-sub{font-size:13px;color:var(--texto-suave);margin:0 0 20px;}
+
+  /* ===== CARDS ===== */
+  .cards-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:26px;}
+  @media(min-width:640px){.cards-grid{grid-template-columns:repeat(3,1fr);}}
+  @media(min-width:900px){.cards-grid{grid-template-columns:repeat(5,1fr);}}
+  .card{
+    background:var(--card-bg);border-radius:var(--radius);padding:16px;box-shadow:var(--sombra);
+    border:1px solid var(--borda);position:relative;overflow:hidden;
+  }
+  .card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--verde);}
+  .card.alt::before{background:var(--verde-claro);}
+  .card .card-label{font-size:11.5px;color:var(--texto-suave);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;}
+  .card .card-value{font-size:28px;font-weight:800;color:var(--texto);line-height:1;}
+  .card .card-value small{font-size:14px;font-weight:600;color:var(--texto-suave);}
+  .card .card-icon{position:absolute;right:14px;top:14px;font-size:20px;opacity:.28;}
+
+  /* ===== SECTION / TABS ===== */
+  .section{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--sombra);border:1px solid var(--borda);overflow:hidden;margin-bottom:20px;}
+  .tabs{display:flex;border-bottom:1px solid var(--borda);}
+  .tab-btn{
+    flex:1;padding:13px 10px;text-align:center;background:none;border:none;cursor:pointer;
+    font-size:13.5px;font-weight:600;color:var(--texto-suave);border-bottom:3px solid transparent;
+  }
+  .tab-btn.active{color:var(--verde-escuro);border-bottom-color:var(--verde);}
+
+  .filters{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-bottom:1px solid var(--borda);}
+  .filters input, .filters select{
+    padding:8px 10px;border:1px solid var(--borda);border-radius:8px;font-size:13px;background:#fafbfa;
+  }
+  .filters input{flex:1;min-width:160px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--texto-suave);
+    padding:10px 16px;border-bottom:1px solid var(--borda);white-space:nowrap;
+  }
+  tbody td{padding:10px 16px;border-bottom:1px solid #f0f2f0;white-space:nowrap;}
+  tbody tr:hover{background:#f8faf8;}
+  .table-wrap{overflow-x:auto;max-height:480px;overflow-y:auto;}
+
+  .badge{padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;display:inline-block;}
+  .badge-aberta{background:#fff4d6;color:#8a6300;}
+  .badge-fechada{background:#dff3e4;color:var(--verde-escuro);}
+  .badge-cancelada{background:#fde3e3;color:#a13030;}
+  .badge-outro{background:#e6e9ee;color:#4a5568;}
+  .badge-generic{background:#e9edff;color:#38508f;}
+
+  .empty{padding:40px;text-align:center;color:var(--texto-suave);font-size:13px;}
+  .load-line{padding:16px;text-align:center;color:var(--texto-suave);font-size:13px;}
+
+  /* ===== BOTTOM NAV (mobile) ===== */
+  .bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--borda);
+    display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:50;
+  }
+  @media(min-width:900px){.bottom-nav{display:none;}}
+  .bottom-nav a{
+    flex:1;text-align:center;text-decoration:none;color:var(--texto-suave);font-size:10.5px;
+    display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;font-weight:600;
+  }
+  .bottom-nav a.active{color:var(--verde);}
+  .bottom-nav a .ic{font-size:18px;}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#c9d6cf;border-radius:8px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-dot">CC</div> Controle de Compras</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="refresh-info" id="lastUpdate">carregando…</span>
+    <button class="refresh" onclick="carregarDados()">↻ Atualizar</button>
+  </div>
+</div>
+
+<div class="sidebar">
+  <a href="#" class="active">📊 Visão Geral</a>
+  <a href="#" onclick="scrollToSection('os')">🔧 Ordens de Serviço</a>
+  <a href="#" onclick="scrollToSection('pedidos')">🧾 Pedidos de Compra</a>
+  <div class="tag">AA Alternativa · Financeiro</div>
+</div>
+
+<div class="content">
+  <p class="page-title">Visão Geral</p>
+  <p class="page-sub">Compras, ordens de serviço e pagamentos em um só lugar.</p>
+
+  <div class="cards-grid" id="cardsGrid">
+    <div class="card"><div class="card-icon">🛠️</div><div class="card-label">Pedidos — Manutenção</div><div class="card-value" id="c_manutencao">–</div></div>
+    <div class="card alt"><div class="card-icon">🛒</div><div class="card-label">Pedidos — Compras</div><div class="card-value" id="c_compras">–</div></div>
+    <div class="card"><div class="card-icon">💳</div><div class="card-label">Lançamentos Cartão</div><div class="card-value" id="c_cartao">–</div></div>
+    <div class="card alt"><div class="card-icon">📂</div><div class="card-label">OS Abertas</div><div class="card-value" id="c_abertas">–</div></div>
+    <div class="card"><div class="card-icon">✅</div><div class="card-label">OS Fechadas</div><div class="card-value" id="c_fechadas">–</div></div>
+  </div>
+
+  <div class="section" id="os">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="mostrarTab('os', this)">Ordens de Serviço</button>
+      <button class="tab-btn" onclick="mostrarTab('pedidos', this)">Pedidos de Compra</button>
+    </div>
+
+    <div id="tab-os">
+      <div class="filters">
+        <input type="text" id="osSearch" placeholder="Buscar por número da OS...">
+        <select id="osStatusFilter">
+          <option value="">Todos os status</option>
+          <option value="ABERTA">Aberta</option>
+          <option value="FECHADA">Fechada</option>
+          <option value="CANCELADA">Cancelada</option>
+          <option value="OUTRO_DEPARTAMENTO">Outro departamento</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Número OS</th><th>Status</th><th>Situação</th><th>Setor</th><th>Placa</th><th>Abertura</th></tr></thead>
+          <tbody id="osTableBody"></tbody>
+        </table>
+      </div>
+      <div id="osEmpty" class="empty" style="display:none;">Nenhuma OS encontrada.</div>
+    </div>
+
+    <div id="tab-pedidos" style="display:none;">
+      <div class="filters">
+        <input type="text" id="pedidoSearch" placeholder="Buscar por número do pedido...">
+        <select id="pedidoSetorFilter">
+          <option value="">Todos os setores</option>
+          <option value="COMPRAS">Compras</option>
+          <option value="MANUTENÇÃO">Manutenção</option>
+          <option value="SGI">SGI</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Número Pedido</th><th>Setor</th><th>Status</th><th>Item</th><th>Abertura</th></tr></thead>
+          <tbody id="pedidoTableBody"></tbody>
+        </table>
+      </div>
+      <div id="pedidoEmpty" class="empty" style="display:none;">Nenhum pedido encontrado.</div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <a href="#" class="active"><span class="ic">📊</span>Geral</a>
+  <a href="#" onclick="scrollToSection('os')"><span class="ic">🔧</span>OS</a>
+  <a href="#" onclick="scrollToSection('pedidos')"><span class="ic">🧾</span>Pedidos</a>
+</div>
+
+<script>
+const API_URL = "https://webhook.servidorwall.online/webhook/cc-api";
+
+let osData = [];
+let pedidoData = [];
+
+function formatarData(iso){
+  if(!iso) return '—';
+  try{
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR');
+  }catch(e){ return iso; }
+}
+
+function badgeOS(status){
+  const map = {
+    ABERTA:['badge-aberta','Aberta'],
+    FECHADA:['badge-fechada','Fechada'],
+    CANCELADA:['badge-cancelada','Cancelada'],
+    OUTRO_DEPARTAMENTO:['badge-outro','Outro depto.']
+  };
+  const [cls,label] = map[status] || ['badge-generic','—'];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function renderOS(){
+  const search = document.getElementById('osSearch').value.trim().toLowerCase();
+  const statusFiltro = document.getElementById('osStatusFilter').value;
+  const filtrado = osData.filter(o=>{
+    const matchSearch = !search || (o.numero_os||'').toLowerCase().includes(search);
+    const matchStatus = !statusFiltro || o.status === statusFiltro;
+    return matchSearch && matchStatus;
+  }).slice(0,500);
+
+  const tbody = document.getElementById('osTableBody');
+  document.getElementById('osEmpty').style.display = filtrado.length ? 'none' : 'block';
+  tbody.innerHTML = filtrado.map(o=>`
+    <tr>
+      <td><strong>${o.numero_os||'—'}</strong></td>
+      <td>${badgeOS(o.status)}</td>
+      <td>${o.situacao||'—'}</td>
+      <td>${o.setor_responsavel||'—'}</td>
+      <td>${o.placa||'—'}</td>
+      <td>${formatarData(o.data_abertura)}</td>
+    </tr>`).join('');
+}
+
+function renderPedidos(){
+  const search = document.getElementById('pedidoSearch').value.trim().toLowerCase();
+  const setorFiltro = document.getElementById('pedidoSetorFilter').value;
+  const filtrado = pedidoData.filter(p=>{
+    const matchSearch = !search || (p.numero_pedido||'').toLowerCase().includes(search);
+    const matchSetor = !setorFiltro || (p.setor_responsavel||'').toUpperCase().includes(setorFiltro);
+    return matchSearch && matchSetor;
+  }).slice(0,500);
+
+  const tbody = document.getElementById('pedidoTableBody');
+  document.getElementById('pedidoEmpty').style.display = filtrado.length ? 'none' : 'block';
+  tbody.innerHTML = filtrado.map(p=>`
+    <tr>
+      <td><strong>${p.numero_pedido||'—'}</strong></td>
+      <td>${p.setor_responsavel||'—'}</td>
+      <td>${p.status_pedido||'—'}</td>
+      <td>${p.item_pedido||'—'}</td>
+      <td>${formatarData(p.data_abertura)}</td>
+    </tr>`).join('');
+}
+
+function mostrarTab(nome, btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-os').style.display = nome==='os' ? 'block':'none';
+  document.getElementById('tab-pedidos').style.display = nome==='pedidos' ? 'block':'none';
+}
+
+function scrollToSection(nome){
+  document.getElementById('os').scrollIntoView({behavior:'smooth'});
+  const btn = nome==='pedidos' ? document.querySelectorAll('.tab-btn')[1] : document.querySelectorAll('.tab-btn')[0];
+  mostrarTab(nome, btn);
+}
+
+async function carregarDados(){
+  document.getElementById('lastUpdate').textContent = 'atualizando…';
+  try{
+    const res = await fetch(API_URL);
+    const data = await res.json();
+
+    document.getElementById('c_manutencao').textContent = data.cards.pedidos_manutencao ?? '–';
+    document.getElementById('c_compras').textContent = data.cards.pedidos_compras ?? '–';
+    document.getElementById('c_cartao').textContent = data.cards.pedidos_cartao ?? '–';
+    document.getElementById('c_abertas').textContent = data.cards.os_abertas ?? '–';
+    document.getElementById('c_fechadas').textContent = data.cards.os_fechadas ?? '–';
+
+    osData = data.osList || [];
+    pedidoData = data.pedidoList || [];
+    renderOS();
+    renderPedidos();
+
+    const atualizado = data.atualizado_em ? new Date(data.atualizado_em) : new Date();
+    document.getElementById('lastUpdate').textContent = 'atualizado às ' + atualizado.toLocaleTimeString('pt-BR');
+  }catch(err){
+    document.getElementById('lastUpdate').textContent = 'erro ao carregar';
+    console.error(err);
+  }
+}
+
+document.getElementById('osSearch').addEventListener('input', renderOS);
+document.getElementById('osStatusFilter').addEventListener('change', renderOS);
+document.getElementById('pedidoSearch').addEventListener('input', renderPedidos);
+document.getElementById('pedidoSetorFilter').addEventListener('change', renderPedidos);
+
+carregarDados();
+</script>
+</body>
+</html>
