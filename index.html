@@ -158,15 +158,54 @@
   .btn-salvar{background:var(--verde);color:#fff;}
   .btn-salvar:disabled{opacity:.6;}
   .modal-erro{background:#fde3e3;color:#a13030;padding:9px 12px;border-radius:8px;font-size:12.5px;margin-bottom:12px;display:none;}
+
+  /* ===== LOGIN ===== */
+  .login-screen{
+    position:fixed;inset:0;background:linear-gradient(160deg,var(--verde-escuro),var(--verde));
+    display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;
+  }
+  .login-box{background:#fff;border-radius:18px;padding:32px 28px;width:100%;max-width:360px;box-shadow:0 12px 40px rgba(0,0,0,.25);}
+  .login-box .logo-dot{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--verde),var(--verde-claro));display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:800;margin:0 auto 14px;}
+  .login-box h2{text-align:center;margin:0 0 4px;font-size:18px;color:var(--verde-escuro);}
+  .login-box p{text-align:center;margin:0 0 22px;font-size:12.5px;color:var(--texto-suave);}
+  .login-box .field{margin-bottom:14px;}
+  .login-box button{width:100%;padding:12px;border:none;border-radius:9px;background:var(--verde);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+  .login-box button:disabled{opacity:.6;}
+  .login-erro{background:#fde3e3;color:#a13030;padding:9px 12px;border-radius:8px;font-size:12.5px;margin-bottom:14px;display:none;}
+  .btn-sair{border:none;background:none;color:var(--texto-suave);font-size:12px;cursor:pointer;text-decoration:underline;}
+
+  /* ===== PAGINAÇÃO ===== */
+  .pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 16px;border-top:1px solid var(--borda);font-size:12.5px;color:var(--texto-suave);}
+  .pagination .pg-btns{display:flex;align-items:center;gap:6px;}
+  .pagination button{border:1px solid var(--borda);background:#fff;border-radius:7px;padding:6px 10px;cursor:pointer;font-size:12.5px;}
+  .pagination button:disabled{opacity:.4;cursor:default;}
+  .pagination select{border:1px solid var(--borda);border-radius:7px;padding:5px 7px;font-size:12.5px;}
+  th.sortable{cursor:pointer;user-select:none;}
+  th.sortable:after{content:' ↕';opacity:.4;font-size:10px;}
+  th.sortable.asc:after{content:' ↑';opacity:1;}
+  th.sortable.desc:after{content:' ↓';opacity:1;}
 </style>
 </head>
 <body>
 
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="logo-dot">CC</div>
+    <h2>Controle de Compras</h2>
+    <p>Entre com seu usuário para continuar.</p>
+    <div class="login-erro" id="loginErro"></div>
+    <div class="field"><label>Usuário</label><input type="text" id="loginUsuario" autocomplete="username"></div>
+    <div class="field"><label>Senha</label><input type="password" id="loginSenha" autocomplete="current-password"></div>
+    <button id="btnLogin" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="brand"><div class="logo-dot">CC</div> Controle de Compras</div>
   <div style="display:flex;align-items:center;gap:12px;">
-    <span class="refresh-info" id="lastUpdate">carregando…</span>
+    <span class="refresh-info" id="lastUpdate"></span>
     <button class="refresh" onclick="carregarDados()">↻ Atualizar</button>
+    <button class="btn-sair" onclick="sair()">Sair</button>
   </div>
 </div>
 
@@ -174,6 +213,8 @@
   <a href="#" class="active">📊 Visão Geral</a>
   <a href="#" onclick="scrollToSection('os')">🔧 Ordens de Serviço</a>
   <a href="#" onclick="scrollToSection('pedidos')">🧾 Pedidos de Compra</a>
+  <a href="#" onclick="scrollToSection('fornecedores')">📦 Fornecedores</a>
+  <a href="#" onclick="abrirProcesso()">📋 Processo (Fernanda)</a>
   <div class="tag">AA Alternativa · Financeiro</div>
 </div>
 
@@ -193,6 +234,7 @@
     <div class="tabs">
       <button class="tab-btn active" onclick="mostrarTab('os', this)">Ordens de Serviço</button>
       <button class="tab-btn" onclick="mostrarTab('pedidos', this)">Pedidos de Compra</button>
+      <button class="tab-btn" onclick="mostrarTab('fornecedores', this)">Fornecedores</button>
     </div>
 
     <div id="tab-os">
@@ -209,11 +251,19 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Número OS</th><th>Status</th><th>Situação</th><th>Setor</th><th>Placa</th><th>Abertura</th></tr></thead>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('os','numero_os',this)">Número OS</th>
+            <th class="sortable" onclick="ordenar('os','status',this)">Status</th>
+            <th class="sortable" onclick="ordenar('os','situacao',this)">Situação</th>
+            <th class="sortable" onclick="ordenar('os','setor_responsavel',this)">Setor</th>
+            <th class="sortable" onclick="ordenar('os','placa',this)">Placa</th>
+            <th class="sortable" onclick="ordenar('os','data_abertura',this)">Abertura</th>
+          </tr></thead>
           <tbody id="osTableBody"></tbody>
         </table>
       </div>
       <div id="osEmpty" class="empty" style="display:none;">Nenhuma OS encontrada.</div>
+      <div class="pagination" id="osPagination"></div>
     </div>
 
     <div id="tab-pedidos" style="display:none;">
@@ -229,11 +279,108 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Número Pedido</th><th>Setor</th><th>Status</th><th>Item</th><th>Abertura</th></tr></thead>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('pedido','numero_pedido',this)">Número Pedido</th>
+            <th class="sortable" onclick="ordenar('pedido','setor_responsavel',this)">Setor</th>
+            <th class="sortable" onclick="ordenar('pedido','status_pedido',this)">Status</th>
+            <th class="sortable" onclick="ordenar('pedido','item_pedido',this)">Item</th>
+            <th class="sortable" onclick="ordenar('pedido','data_abertura',this)">Abertura</th>
+          </tr></thead>
           <tbody id="pedidoTableBody"></tbody>
         </table>
       </div>
       <div id="pedidoEmpty" class="empty" style="display:none;">Nenhum pedido encontrado.</div>
+      <div class="pagination" id="pedidoPagination"></div>
+    </div>
+
+    <div id="tab-fornecedores" style="display:none;">
+      <div class="filters">
+        <input type="text" id="fornecedorSearch" placeholder="Buscar por razão social ou CNPJ...">
+        <button class="btn-nova" onclick="abrirModalFornecedor()">+ Novo Fornecedor</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('fornecedor','razao_social',this)">Razão Social</th>
+            <th class="sortable" onclick="ordenar('fornecedor','cnpj',this)">CNPJ</th>
+            <th class="sortable" onclick="ordenar('fornecedor','categoria',this)">Categoria</th>
+            <th>Contato</th>
+            <th>Condição Pagto.</th>
+          </tr></thead>
+          <tbody id="fornecedorTableBody"></tbody>
+        </table>
+      </div>
+      <div id="fornecedorEmpty" class="empty" style="display:none;">Nenhum fornecedor cadastrado.</div>
+      <div class="pagination" id="fornecedorPagination"></div>
+    </div>
+  </div>
+
+  <div class="section" id="processo" style="display:none;">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="mostrarTabProcesso('solicitacoes', this)">Solicitações</button>
+      <button class="tab-btn" onclick="mostrarTabProcesso('aprovacoes', this)">Aprovações</button>
+      <button class="tab-btn" onclick="mostrarTabProcesso('documentos', this)">Documentos</button>
+    </div>
+    <p style="font-size:12px;color:var(--texto-suave);padding:12px 16px 0;margin:0;">Dados vindos do bot de assinatura/aprovação da Fernanda — somente leitura.</p>
+
+    <div id="subtab-solicitacoes">
+      <div class="filters">
+        <input type="text" id="solicitacaoSearch" placeholder="Buscar por número ou solicitante...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('solicitacao','pedido_numero',this)">Nº Pedido</th>
+            <th class="sortable" onclick="ordenar('solicitacao','nome_solicitante',this)">Solicitante</th>
+            <th class="sortable" onclick="ordenar('solicitacao','status_geral',this)">Status</th>
+            <th>Assinante 1</th>
+            <th>Assinante 2</th>
+            <th class="sortable" onclick="ordenar('solicitacao','criado_em',this)">Criado em</th>
+          </tr></thead>
+          <tbody id="solicitacaoTableBody"></tbody>
+        </table>
+      </div>
+      <div id="solicitacaoEmpty" class="empty" style="display:none;">Nenhuma solicitação encontrada.</div>
+      <div class="pagination" id="solicitacaoPagination"></div>
+    </div>
+
+    <div id="subtab-aprovacoes" style="display:none;">
+      <div class="filters">
+        <input type="text" id="aprovacaoSearch" placeholder="Buscar por número do pedido...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('aprovacao','pedido_numero',this)">Nº Pedido</th>
+            <th class="sortable" onclick="ordenar('aprovacao','status',this)">Status</th>
+            <th class="sortable" onclick="ordenar('aprovacao','criado_em',this)">Criado em</th>
+            <th class="sortable" onclick="ordenar('aprovacao','decidido_em',this)">Decidido em</th>
+          </tr></thead>
+          <tbody id="aprovacaoTableBody"></tbody>
+        </table>
+      </div>
+      <div id="aprovacaoEmpty" class="empty" style="display:none;">Nenhuma aprovação encontrada.</div>
+      <div class="pagination" id="aprovacaoPagination"></div>
+    </div>
+
+    <div id="subtab-documentos" style="display:none;">
+      <div class="filters">
+        <input type="text" id="documentoSearch" placeholder="Buscar por número do pedido ou tipo...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('documento','pedido_numero',this)">Nº Pedido</th>
+            <th class="sortable" onclick="ordenar('documento','tipo_documento',this)">Tipo</th>
+            <th>Arquivo</th>
+            <th>Enviado por</th>
+            <th class="sortable" onclick="ordenar('documento','enviado_em',this)">Enviado em</th>
+          </tr></thead>
+          <tbody id="documentoTableBody"></tbody>
+        </table>
+      </div>
+      <div id="documentoEmpty" class="empty" style="display:none;">Nenhum documento encontrado.</div>
+      <div class="pagination" id="documentoPagination"></div>
     </div>
   </div>
 </div>
@@ -255,21 +402,104 @@
   <a href="#" class="active"><span class="ic">📊</span>Geral</a>
   <a href="#" onclick="scrollToSection('os')"><span class="ic">🔧</span>OS</a>
   <a href="#" onclick="scrollToSection('pedidos')"><span class="ic">🧾</span>Pedidos</a>
+  <a href="#" onclick="scrollToSection('fornecedores')"><span class="ic">📦</span>Fornec.</a>
+  <a href="#" onclick="abrirProcesso()"><span class="ic">📋</span>Processo</a>
 </div>
 
 <script>
 const API_URL = "https://webhook.servidorwall.online/webhook/cc-api";
-const API_KEY = "c0a008b042915317faca4b73e2fc9c1356987a6d89ff6477";
+const SESSION_KEY = "cc_session_token";
 
 let osData = [];
 let pedidoData = [];
+let fornecedorData = [];
 
+// ===== ESTADO DE PAGINAÇÃO/ORDENAÇÃO =====
+const estado = {
+  os:         { pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
+  pedido:     { pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
+  fornecedor: { pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
+  solicitacao:{ pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
+  aprovacao:  { pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
+  documento:  { pagina:1, tamanho:25, ordCampo:null, ordDir:1 }
+};
+let solicitacaoData = [], aprovacaoData = [], documentoData = [];
+let processoCarregado = false;
+
+// ===== AUTENTICAÇÃO =====
+function getToken(){ return localStorage.getItem(SESSION_KEY); }
+function setToken(t){ localStorage.setItem(SESSION_KEY, t); }
+function limparToken(){ localStorage.removeItem(SESSION_KEY); }
+
+function mostrarLogin(mostrar){
+  document.getElementById('loginScreen').style.display = mostrar ? 'flex' : 'none';
+}
+
+function sair(){
+  limparToken();
+  mostrarLogin(true);
+}
+
+async function fazerLogin(){
+  const erroBox = document.getElementById('loginErro');
+  erroBox.style.display = 'none';
+  const btn = document.getElementById('btnLogin');
+  const username = document.getElementById('loginUsuario').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  if(!username || !senha){
+    erroBox.textContent = 'Preencha usuário e senha.';
+    erroBox.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  try{
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'login', username, senha })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      erroBox.textContent = data.erro || 'Usuário ou senha inválidos.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    setToken(data.token);
+    mostrarLogin(false);
+    carregarDados();
+  }catch(err){
+    erroBox.textContent = 'Erro de conexão.';
+    erroBox.style.display = 'block';
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+// Wrapper de fetch autenticado; se a sessão expirou, volta pro login.
+async function apiFetch(options, queryParams){
+  const token = getToken();
+  const headers = Object.assign({}, (options && options.headers) || {}, { 'x-session-token': token || '' });
+  let url = API_URL;
+  if(queryParams){
+    const qs = new URLSearchParams(queryParams).toString();
+    url += (url.includes('?') ? '&' : '?') + qs;
+  }
+  const res = await fetch(url, Object.assign({}, options, { headers }));
+  if(res.status === 401){
+    limparToken();
+    mostrarLogin(true);
+    throw new Error('Sessão expirada');
+  }
+  return res;
+}
+
+// ===== HELPERS =====
 function formatarData(iso){
   if(!iso) return '—';
-  try{
-    const d = new Date(iso);
-    return d.toLocaleDateString('pt-BR');
-  }catch(e){ return iso; }
+  try{ return new Date(iso).toLocaleDateString('pt-BR'); }catch(e){ return iso; }
 }
 
 function badgeOS(status){
@@ -283,18 +513,72 @@ function badgeOS(status){
   return `<span class="badge ${cls}">${label}</span>`;
 }
 
+function ordenar(tabela, campo, thEl){
+  const e = estado[tabela];
+  if(e.ordCampo === campo){ e.ordDir *= -1; } else { e.ordCampo = campo; e.ordDir = 1; }
+  e.pagina = 1;
+  thEl.parentElement.querySelectorAll('th.sortable').forEach(th=>th.classList.remove('asc','desc'));
+  thEl.classList.add(e.ordDir===1 ? 'asc' : 'desc');
+  const dispatch = {
+    os: renderOS, pedido: renderPedidos, fornecedor: renderFornecedores,
+    solicitacao: renderSolicitacoes, aprovacao: renderAprovacoes, documento: renderDocumentos
+  };
+  dispatch[tabela]();
+}
+
+function aplicarOrdenacao(lista, e){
+  if(!e.ordCampo) return lista;
+  const campo = e.ordCampo;
+  return [...lista].sort((a,b)=>{
+    const va = (a[campo]??'').toString().toLowerCase();
+    const vb = (b[campo]??'').toString().toLowerCase();
+    if(va < vb) return -1 * e.ordDir;
+    if(va > vb) return 1 * e.ordDir;
+    return 0;
+  });
+}
+
+function renderPaginacao(containerId, tabela, totalItens){
+  const e = estado[tabela];
+  const totalPaginas = Math.max(1, Math.ceil(totalItens / e.tamanho));
+  if(e.pagina > totalPaginas) e.pagina = totalPaginas;
+  const container = document.getElementById(containerId);
+  const nomesFuncao = {
+    os:'renderOS', pedido:'renderPedidos', fornecedor:'renderFornecedores',
+    solicitacao:'renderSolicitacoes', aprovacao:'renderAprovacoes', documento:'renderDocumentos'
+  };
+  const funcaoRender = nomesFuncao[tabela];
+  container.innerHTML = `
+    <span>${totalItens} registro${totalItens===1?'':'s'} — página ${e.pagina} de ${totalPaginas}</span>
+    <div class="pg-btns">
+      <select onchange="estado.${tabela}.tamanho=parseInt(this.value);estado.${tabela}.pagina=1;${funcaoRender}()">
+        ${[25,50,100,250].map(n=>`<option value="${n}" ${e.tamanho===n?'selected':''}>${n} por página</option>`).join('')}
+      </select>
+      <button ${e.pagina<=1?'disabled':''} onclick="estado.${tabela}.pagina--;${funcaoRender}()">‹ Anterior</button>
+      <button ${e.pagina>=totalPaginas?'disabled':''} onclick="estado.${tabela}.pagina++;${funcaoRender}()">Próxima ›</button>
+    </div>`;
+}
+
+function paginar(lista, e){
+  const inicio = (e.pagina - 1) * e.tamanho;
+  return lista.slice(inicio, inicio + e.tamanho);
+}
+
+// ===== RENDER: OS =====
 function renderOS(){
   const search = document.getElementById('osSearch').value.trim().toLowerCase();
   const statusFiltro = document.getElementById('osStatusFilter').value;
-  const filtrado = osData.filter(o=>{
+  let filtrado = osData.filter(o=>{
     const matchSearch = !search || (o.numero_os||'').toLowerCase().includes(search);
     const matchStatus = !statusFiltro || o.status === statusFiltro;
     return matchSearch && matchStatus;
-  }).slice(0,500);
+  });
+  filtrado = aplicarOrdenacao(filtrado, estado.os);
+  const pagina = paginar(filtrado, estado.os);
 
   const tbody = document.getElementById('osTableBody');
   document.getElementById('osEmpty').style.display = filtrado.length ? 'none' : 'block';
-  tbody.innerHTML = filtrado.map(o=>`
+  tbody.innerHTML = pagina.map(o=>`
     <tr onclick='abrirModalOS(${JSON.stringify(o).replace(/'/g,"&#39;")})'>
       <td><strong>${o.numero_os||'—'}</strong></td>
       <td>${badgeOS(o.status)}</td>
@@ -303,20 +587,24 @@ function renderOS(){
       <td>${o.placa||'—'}</td>
       <td>${formatarData(o.data_abertura)}</td>
     </tr>`).join('');
+  renderPaginacao('osPagination', 'os', filtrado.length);
 }
 
+// ===== RENDER: PEDIDOS =====
 function renderPedidos(){
   const search = document.getElementById('pedidoSearch').value.trim().toLowerCase();
   const setorFiltro = document.getElementById('pedidoSetorFilter').value;
-  const filtrado = pedidoData.filter(p=>{
+  let filtrado = pedidoData.filter(p=>{
     const matchSearch = !search || (p.numero_pedido||'').toLowerCase().includes(search);
     const matchSetor = !setorFiltro || (p.setor_responsavel||'').toUpperCase().includes(setorFiltro);
     return matchSearch && matchSetor;
-  }).slice(0,500);
+  });
+  filtrado = aplicarOrdenacao(filtrado, estado.pedido);
+  const pagina = paginar(filtrado, estado.pedido);
 
   const tbody = document.getElementById('pedidoTableBody');
   document.getElementById('pedidoEmpty').style.display = filtrado.length ? 'none' : 'block';
-  tbody.innerHTML = filtrado.map(p=>`
+  tbody.innerHTML = pagina.map(p=>`
     <tr onclick='abrirModalPedido(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
       <td><strong>${p.numero_pedido||'—'}</strong></td>
       <td>${p.setor_responsavel||'—'}</td>
@@ -324,25 +612,149 @@ function renderPedidos(){
       <td>${p.item_pedido||'—'}</td>
       <td>${formatarData(p.data_abertura)}</td>
     </tr>`).join('');
+  renderPaginacao('pedidoPagination', 'pedido', filtrado.length);
+}
+
+// ===== RENDER: FORNECEDORES =====
+function renderFornecedores(){
+  const search = document.getElementById('fornecedorSearch').value.trim().toLowerCase();
+  let filtrado = fornecedorData.filter(f=>{
+    return !search || (f.razao_social||'').toLowerCase().includes(search) || (f.cnpj||'').toLowerCase().includes(search);
+  });
+  filtrado = aplicarOrdenacao(filtrado, estado.fornecedor);
+  const pagina = paginar(filtrado, estado.fornecedor);
+
+  const tbody = document.getElementById('fornecedorTableBody');
+  document.getElementById('fornecedorEmpty').style.display = filtrado.length ? 'none' : 'block';
+  tbody.innerHTML = pagina.map(f=>`
+    <tr onclick='abrirModalFornecedor(${JSON.stringify(f).replace(/'/g,"&#39;")})'>
+      <td><strong>${f.razao_social||'—'}</strong></td>
+      <td>${f.cnpj||'—'}</td>
+      <td>${f.categoria||'—'}</td>
+      <td>${f.contato||'—'}</td>
+      <td>${f.condicao_pagamento||'—'}</td>
+    </tr>`).join('');
+  renderPaginacao('fornecedorPagination', 'fornecedor', filtrado.length);
 }
 
 function mostrarTab(nome, btn){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.parentElement.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-os').style.display = nome==='os' ? 'block':'none';
   document.getElementById('tab-pedidos').style.display = nome==='pedidos' ? 'block':'none';
+  document.getElementById('tab-fornecedores').style.display = nome==='fornecedores' ? 'block':'none';
+}
+
+// ===== PROCESSO (bot da Fernanda) — carregado sob demanda =====
+function badgeGenerico(status){
+  const s = (status||'').toString().toLowerCase();
+  let cls = 'badge-generic';
+  if(s.includes('conclu') || s.includes('aprovad') || s.includes('assinad')) cls = 'badge-fechada';
+  else if(s.includes('pend') || s.includes('aguard')) cls = 'badge-aberta';
+  else if(s.includes('cancel') || s.includes('reprovad')) cls = 'badge-cancelada';
+  if(!status) return '—';
+  return `<span class="badge ${cls}">${status}</span>`;
+}
+
+async function abrirProcesso(){
+  document.getElementById('processo').style.display = 'block';
+  document.getElementById('processo').scrollIntoView({behavior:'smooth'});
+  if(!processoCarregado) await carregarProcesso();
+}
+
+function mostrarTabProcesso(nome, btn){
+  btn.parentElement.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('subtab-solicitacoes').style.display = nome==='solicitacoes' ? 'block':'none';
+  document.getElementById('subtab-aprovacoes').style.display = nome==='aprovacoes' ? 'block':'none';
+  document.getElementById('subtab-documentos').style.display = nome==='documentos' ? 'block':'none';
+}
+
+async function carregarProcesso(){
+  try{
+    const res = await apiFetch({}, { secao:'processo' });
+    const data = await res.json();
+    solicitacaoData = data.solicitacoesList || [];
+    aprovacaoData = data.aprovacoesList || [];
+    documentoData = data.documentosList || [];
+    processoCarregado = true;
+    renderSolicitacoes();
+    renderAprovacoes();
+    renderDocumentos();
+  }catch(err){
+    if(err.message !== 'Sessão expirada') console.error(err);
+  }
+}
+
+function renderSolicitacoes(){
+  const search = document.getElementById('solicitacaoSearch').value.trim().toLowerCase();
+  let filtrado = solicitacaoData.filter(s=>{
+    return !search || (s.pedido_numero||'').toLowerCase().includes(search) || (s.nome_solicitante||'').toLowerCase().includes(search);
+  });
+  filtrado = aplicarOrdenacao(filtrado, estado.solicitacao);
+  const pagina = paginar(filtrado, estado.solicitacao);
+  const tbody = document.getElementById('solicitacaoTableBody');
+  document.getElementById('solicitacaoEmpty').style.display = filtrado.length ? 'none' : 'block';
+  tbody.innerHTML = pagina.map(s=>`
+    <tr>
+      <td><strong>${s.pedido_numero||'—'}</strong></td>
+      <td>${s.nome_solicitante||'—'}</td>
+      <td>${badgeGenerico(s.status_geral)}</td>
+      <td>${s.assinante1_nome||'—'} ${badgeGenerico(s.assinante1_status)}</td>
+      <td>${s.assinante2_nome||'—'} ${badgeGenerico(s.assinante2_status)}</td>
+      <td>${formatarData(s.criado_em)}</td>
+    </tr>`).join('');
+  renderPaginacao('solicitacaoPagination', 'solicitacao', filtrado.length);
+}
+
+function renderAprovacoes(){
+  const search = document.getElementById('aprovacaoSearch').value.trim().toLowerCase();
+  let filtrado = aprovacaoData.filter(a=> !search || (a.pedido_numero||'').toLowerCase().includes(search));
+  filtrado = aplicarOrdenacao(filtrado, estado.aprovacao);
+  const pagina = paginar(filtrado, estado.aprovacao);
+  const tbody = document.getElementById('aprovacaoTableBody');
+  document.getElementById('aprovacaoEmpty').style.display = filtrado.length ? 'none' : 'block';
+  tbody.innerHTML = pagina.map(a=>`
+    <tr>
+      <td><strong>${a.pedido_numero||'—'}</strong></td>
+      <td>${badgeGenerico(a.status)}</td>
+      <td>${formatarData(a.criado_em)}</td>
+      <td>${formatarData(a.decidido_em)}</td>
+    </tr>`).join('');
+  renderPaginacao('aprovacaoPagination', 'aprovacao', filtrado.length);
+}
+
+function renderDocumentos(){
+  const search = document.getElementById('documentoSearch').value.trim().toLowerCase();
+  let filtrado = documentoData.filter(d=>{
+    return !search || (d.pedido_numero||'').toLowerCase().includes(search) || (d.tipo_documento||'').toLowerCase().includes(search);
+  });
+  filtrado = aplicarOrdenacao(filtrado, estado.documento);
+  const pagina = paginar(filtrado, estado.documento);
+  const tbody = document.getElementById('documentoTableBody');
+  document.getElementById('documentoEmpty').style.display = filtrado.length ? 'none' : 'block';
+  tbody.innerHTML = pagina.map(d=>`
+    <tr>
+      <td><strong>${d.pedido_numero||'—'}</strong></td>
+      <td>${d.tipo_documento||'—'}</td>
+      <td>${d.nome_arquivo||'—'}</td>
+      <td>${d.enviado_por_nome||d.enviado_por_telefone||'—'}</td>
+      <td>${formatarData(d.enviado_em)}</td>
+    </tr>`).join('');
+  renderPaginacao('documentoPagination', 'documento', filtrado.length);
 }
 
 function scrollToSection(nome){
   document.getElementById('os').scrollIntoView({behavior:'smooth'});
-  const btn = nome==='pedidos' ? document.querySelectorAll('.tab-btn')[1] : document.querySelectorAll('.tab-btn')[0];
-  mostrarTab(nome, btn);
+  const btns = document.querySelectorAll('#os .tabs .tab-btn');
+  const idx = nome==='pedidos' ? 1 : (nome==='fornecedores' ? 2 : 0);
+  mostrarTab(nome, btns[idx]);
 }
 
 async function carregarDados(){
   document.getElementById('lastUpdate').textContent = 'atualizando…';
   try{
-    const res = await fetch(API_URL, { headers: { 'x-api-key': API_KEY } });
+    const res = await apiFetch({});
     const data = await res.json();
 
     document.getElementById('c_manutencao').textContent = data.cards.pedidos_manutencao ?? '–';
@@ -353,20 +765,25 @@ async function carregarDados(){
 
     osData = data.osList || [];
     pedidoData = data.pedidoList || [];
+    fornecedorData = data.fornecedoresList || [];
     renderOS();
     renderPedidos();
+    renderFornecedores();
 
     const atualizado = data.atualizado_em ? new Date(data.atualizado_em) : new Date();
     document.getElementById('lastUpdate').textContent = 'atualizado às ' + atualizado.toLocaleTimeString('pt-BR');
   }catch(err){
-    document.getElementById('lastUpdate').textContent = 'erro ao carregar';
-    console.error(err);
+    if(err.message !== 'Sessão expirada'){
+      document.getElementById('lastUpdate').textContent = 'erro ao carregar';
+      console.error(err);
+    }
   }
 }
 
-// ===== MODAL: criar/editar OS e Pedido =====
-let modalTipo = null;   // 'os' | 'pedido'
+// ===== MODAL: criar/editar OS, Pedido e Fornecedor =====
+let modalTipo = null;   // 'os' | 'pedido' | 'fornecedor'
 let modalModo = null;   // 'create' | 'update'
+let modalIdFornecedor = null;
 
 function campoHTML(label, id, valor, tipo, opcoes){
   valor = valor==null ? '' : valor;
@@ -392,7 +809,7 @@ function abrirModalOS(os){
   document.getElementById('modalErro').style.display = 'none';
   const f = os || {};
   document.getElementById('modalForm').innerHTML = [
-    campoHTML('Número da OS','f_numero_os', f.numero_os, os?'text-disabled':'text'),
+    campoHTML('Número da OS','f_numero_os', f.numero_os, 'text'),
     campoHTML('Status','f_status', f.status||'ABERTA', 'select', ['ABERTA','FECHADA','CANCELADA','OUTRO_DEPARTAMENTO']),
     campoHTML('Situação','f_situacao', f.situacao, 'text'),
     campoHTML('Setor Responsável','f_setor_responsavel', f.setor_responsavel, 'text'),
@@ -412,13 +829,35 @@ function abrirModalPedido(pedido){
   document.getElementById('modalErro').style.display = 'none';
   const f = pedido || {};
   document.getElementById('modalForm').innerHTML = [
-    campoHTML('Número do Pedido','f_numero_pedido', f.numero_pedido, pedido?'text-disabled':'text'),
+    campoHTML('Número do Pedido','f_numero_pedido', f.numero_pedido, 'text'),
     campoHTML('Setor Responsável','f_setor_responsavel', f.setor_responsavel||'COMPRAS', 'select', ['COMPRAS','MANUTENÇÃO','SGI']),
     campoHTML('Status','f_status_pedido', f.status_pedido||'ABERTO', 'text'),
     campoHTML('Item do Pedido','f_item_pedido', f.item_pedido, 'textarea'),
     campoHTML('Data de Abertura','f_data_abertura', f.data_abertura, 'date')
   ].join('');
   if(pedido){ document.getElementById('f_numero_pedido').disabled = true; }
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function abrirModalFornecedor(fornecedor){
+  modalTipo = 'fornecedor';
+  modalModo = fornecedor ? 'update' : 'create';
+  modalIdFornecedor = fornecedor ? fornecedor.id : null;
+  document.getElementById('modalTitulo').textContent = fornecedor ? `Editar Fornecedor` : 'Novo Fornecedor';
+  document.getElementById('modalSub').textContent = fornecedor ? 'Altere os campos e salve.' : 'Preencha os dados do novo fornecedor.';
+  document.getElementById('modalErro').style.display = 'none';
+  const f = fornecedor || {};
+  document.getElementById('modalForm').innerHTML = [
+    campoHTML('Razão Social','f_razao_social', f.razao_social, 'text'),
+    campoHTML('Nome Fantasia','f_nome_fantasia', f.nome_fantasia, 'text'),
+    campoHTML('CNPJ','f_cnpj', f.cnpj, 'text'),
+    campoHTML('Categoria','f_categoria', f.categoria, 'text'),
+    campoHTML('Contato','f_contato', f.contato, 'text'),
+    campoHTML('Telefone','f_telefone', f.telefone, 'text'),
+    campoHTML('E-mail','f_email', f.email, 'text'),
+    campoHTML('Condição de Pagamento','f_condicao_pagamento', f.condicao_pagamento, 'text'),
+    campoHTML('Observação','f_observacao', f.observacao, 'textarea')
+  ].join('');
   document.getElementById('modalOverlay').classList.add('open');
 }
 
@@ -444,7 +883,7 @@ async function salvarModal(){
       data_abertura: document.getElementById('f_data_abertura').value || null,
       observacao: document.getElementById('f_observacao').value.trim()
     };
-  } else {
+  } else if(modalTipo === 'pedido'){
     action = modalModo === 'create' ? 'create_pedido' : 'update_pedido';
     body = {
       action,
@@ -454,14 +893,29 @@ async function salvarModal(){
       item_pedido: document.getElementById('f_item_pedido').value.trim(),
       data_abertura: document.getElementById('f_data_abertura').value || null
     };
+  } else {
+    action = modalModo === 'create' ? 'create_fornecedor' : 'update_fornecedor';
+    body = {
+      action,
+      id: modalIdFornecedor,
+      razao_social: document.getElementById('f_razao_social').value.trim(),
+      nome_fantasia: document.getElementById('f_nome_fantasia').value.trim(),
+      cnpj: document.getElementById('f_cnpj').value.trim(),
+      categoria: document.getElementById('f_categoria').value.trim(),
+      contato: document.getElementById('f_contato').value.trim(),
+      telefone: document.getElementById('f_telefone').value.trim(),
+      email: document.getElementById('f_email').value.trim(),
+      condicao_pagamento: document.getElementById('f_condicao_pagamento').value.trim(),
+      observacao: document.getElementById('f_observacao').value.trim()
+    };
   }
 
   btn.disabled = true;
   btn.textContent = 'Salvando...';
   try{
-    const res = await fetch(API_URL, {
+    const res = await apiFetch({
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     const data = await res.json();
@@ -473,21 +927,33 @@ async function salvarModal(){
     fecharModal();
     carregarDados();
   }catch(err){
-    erroBox.textContent = 'Erro de conexão ao salvar.';
-    erroBox.style.display = 'block';
-    console.error(err);
+    if(err.message !== 'Sessão expirada'){
+      erroBox.textContent = 'Erro de conexão ao salvar.';
+      erroBox.style.display = 'block';
+      console.error(err);
+    }
   }finally{
     btn.disabled = false;
     btn.textContent = 'Salvar';
   }
 }
 
-document.getElementById('osSearch').addEventListener('input', renderOS);
-document.getElementById('osStatusFilter').addEventListener('change', renderOS);
-document.getElementById('pedidoSearch').addEventListener('input', renderPedidos);
-document.getElementById('pedidoSetorFilter').addEventListener('change', renderPedidos);
+document.getElementById('osSearch').addEventListener('input', ()=>{estado.os.pagina=1;renderOS();});
+document.getElementById('osStatusFilter').addEventListener('change', ()=>{estado.os.pagina=1;renderOS();});
+document.getElementById('pedidoSearch').addEventListener('input', ()=>{estado.pedido.pagina=1;renderPedidos();});
+document.getElementById('pedidoSetorFilter').addEventListener('change', ()=>{estado.pedido.pagina=1;renderPedidos();});
+document.getElementById('fornecedorSearch').addEventListener('input', ()=>{estado.fornecedor.pagina=1;renderFornecedores();});
+document.getElementById('solicitacaoSearch').addEventListener('input', ()=>{estado.solicitacao.pagina=1;renderSolicitacoes();});
+document.getElementById('aprovacaoSearch').addEventListener('input', ()=>{estado.aprovacao.pagina=1;renderAprovacoes();});
+document.getElementById('documentoSearch').addEventListener('input', ()=>{estado.documento.pagina=1;renderDocumentos();});
 
-carregarDados();
+// ===== INICIALIZAÇÃO =====
+if(getToken()){
+  mostrarLogin(false);
+  carregarDados();
+} else {
+  mostrarLogin(true);
+}
 </script>
 </body>
 </html>
