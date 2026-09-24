@@ -366,13 +366,13 @@ async function carregarDados(mes){
     const res = await apiFetch({}, mes ? { mes } : null);
     const data = await res.json();
 
-    setText('c_manutencao', data.cards.pedidos_manutencao ?? '–');
-    setText('c_compras', data.cards.pedidos_compras ?? '–');
+    setText('c_manutencao_qtd', data.cards.manutencao_qtd ?? '–');
+    setText('c_manutencao_valor', formatarMoeda(data.cards.manutencao_valor));
+    setText('c_almoxarifado_qtd', data.cards.almoxarifado_qtd ?? '–');
+    setText('c_almoxarifado_valor', formatarMoeda(data.cards.almoxarifado_valor));
     setText('c_cartao', data.cards.pedidos_cartao ?? '–');
     setText('c_abertas', data.cards.os_abertas ?? '–');
     setText('c_fechadas', data.cards.os_fechadas ?? '–');
-    setText('c_valor_os', formatarMoeda(data.cards.valor_os));
-    setText('c_valor_pedidos', formatarMoeda(data.cards.valor_pedidos));
     setText('c_valor_cartao', formatarMoeda(data.cards.valor_cartao));
 
     osData = data.osList || [];
