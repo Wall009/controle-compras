@@ -12,10 +12,12 @@ const estado = {
   os:         { pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
   pedido:     { pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
   fornecedor: { pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
+  recebimento:{ pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
   solicitacao:{ pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
   aprovacao:  { pagina:1, tamanho:25, ordCampo:null, ordDir:1 },
   documento:  { pagina:1, tamanho:25, ordCampo:null, ordDir:1 }
 };
+let recebimentoData = [];
 let solicitacaoData = [], aprovacaoData = [], documentoData = [];
 let processoCarregado = false;
 
@@ -95,6 +97,11 @@ function formatarData(iso){
   try{ return new Date(iso).toLocaleDateString('pt-BR'); }catch(e){ return iso; }
 }
 
+function formatarMoeda(v){
+  const n = Number(v)||0;
+  return n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+
 function badgeOS(status){
   const map = {
     ABERTA:['badge-aberta','Aberta'],
@@ -113,7 +120,7 @@ function ordenar(tabela, campo, thEl){
   thEl.parentElement.querySelectorAll('th.sortable').forEach(th=>th.classList.remove('asc','desc'));
   thEl.classList.add(e.ordDir===1 ? 'asc' : 'desc');
   const dispatch = {
-    os: renderOS, pedido: renderPedidos, fornecedor: renderFornecedores,
+    os: renderOS, pedido: renderPedidos, fornecedor: renderFornecedores, recebimento: renderRecebimentos,
     solicitacao: renderSolicitacoes, aprovacao: renderAprovacoes, documento: renderDocumentos
   };
   dispatch[tabela]();
@@ -137,7 +144,7 @@ function renderPaginacao(containerId, tabela, totalItens){
   if(e.pagina > totalPaginas) e.pagina = totalPaginas;
   const container = document.getElementById(containerId);
   const nomesFuncao = {
-    os:'renderOS', pedido:'renderPedidos', fornecedor:'renderFornecedores',
+    os:'renderOS', pedido:'renderPedidos', fornecedor:'renderFornecedores', recebimento:'renderRecebimentos',
     solicitacao:'renderSolicitacoes', aprovacao:'renderAprovacoes', documento:'renderDocumentos'
   };
   const funcaoRender = nomesFuncao[tabela];
@@ -178,6 +185,8 @@ function renderOS(){
       <td>${o.situacao||'—'}</td>
       <td>${o.setor_responsavel||'—'}</td>
       <td>${o.placa||'—'}</td>
+      <td>${o.pedido_relacionado||'—'}</td>
+      <td>${formatarMoeda(o.valor)}</td>
       <td>${formatarData(o.data_abertura)}</td>
     </tr>`).join('');
   renderPaginacao('osPagination', 'os', filtrado.length);
@@ -203,6 +212,8 @@ function renderPedidos(){
       <td>${p.setor_responsavel||'—'}</td>
       <td>${p.status_pedido||'—'}</td>
       <td>${p.item_pedido||'—'}</td>
+      <td>${p.os_relacionada||'—'}</td>
+      <td>${formatarMoeda(p.valor)}</td>
       <td>${formatarData(p.data_abertura)}</td>
     </tr>`).join('');
   renderPaginacao('pedidoPagination', 'pedido', filtrado.length);
@@ -228,6 +239,32 @@ function renderFornecedores(){
       <td>${f.condicao_pagamento||'—'}</td>
     </tr>`).join('');
   renderPaginacao('fornecedorPagination', 'fornecedor', filtrado.length);
+}
+
+function simNao(v){ return v ? '<span class="badge badge-cancelada">Sim</span>' : '<span class="badge badge-fechada">Não</span>'; }
+
+function renderRecebimentos(){
+  const search = document.getElementById('recebimentoSearch').value.trim().toLowerCase();
+  let filtrado = recebimentoData.filter(r=>{
+    return !search || (r.numero_pedido||'').toLowerCase().includes(search) || (r.fornecedor||'').toLowerCase().includes(search);
+  });
+  filtrado = aplicarOrdenacao(filtrado, estado.recebimento);
+  const pagina = paginar(filtrado, estado.recebimento);
+
+  const tbody = document.getElementById('recebimentoTableBody');
+  document.getElementById('recebimentoEmpty').style.display = filtrado.length ? 'none' : 'block';
+  tbody.innerHTML = pagina.map(r=>`
+    <tr onclick='abrirModalRecebimento(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
+      <td><strong>${r.numero_pedido||'—'}</strong></td>
+      <td>${r.numero_os||'—'}</td>
+      <td>${r.fornecedor||'—'}</td>
+      <td>${r.nf||'—'}</td>
+      <td>${(r.quantidade_recebida||'—')}/${(r.quantidade_solicitada||'—')}</td>
+      <td>${simNao(r.recebimento_parcial)}</td>
+      <td>${simNao(r.divergencia)}</td>
+      <td>${formatarData(r.data_recebimento)}</td>
+    </tr>`).join('');
+  renderPaginacao('recebimentoPagination', 'recebimento', filtrado.length);
 }
 
 // ===== PROCESSO (bot da Fernanda) — carregado sob demanda =====
@@ -323,10 +360,10 @@ function renderDocumentos(){
   renderPaginacao('documentoPagination', 'documento', filtrado.length);
 }
 
-async function carregarDados(){
+async function carregarDados(mes){
   setText('lastUpdate', 'atualizando…');
   try{
-    const res = await apiFetch({});
+    const res = await apiFetch({}, mes ? { mes } : null);
     const data = await res.json();
 
     setText('c_manutencao', data.cards.pedidos_manutencao ?? '–');
@@ -334,10 +371,14 @@ async function carregarDados(){
     setText('c_cartao', data.cards.pedidos_cartao ?? '–');
     setText('c_abertas', data.cards.os_abertas ?? '–');
     setText('c_fechadas', data.cards.os_fechadas ?? '–');
+    setText('c_valor_os', formatarMoeda(data.cards.valor_os));
+    setText('c_valor_pedidos', formatarMoeda(data.cards.valor_pedidos));
+    setText('c_valor_cartao', formatarMoeda(data.cards.valor_cartao));
 
     osData = data.osList || [];
     pedidoData = data.pedidoList || [];
     fornecedorData = data.fornecedoresList || [];
+    recebimentoData = data.recebimentosList || [];
 
     const atualizado = data.atualizado_em ? new Date(data.atualizado_em) : new Date();
     setText('lastUpdate', 'atualizado às ' + atualizado.toLocaleTimeString('pt-BR'));
@@ -383,6 +424,8 @@ function abrirModalOS(os){
     campoHTML('Situação','f_situacao', f.situacao, 'text'),
     campoHTML('Setor Responsável','f_setor_responsavel', f.setor_responsavel, 'text'),
     campoHTML('Placa','f_placa', f.placa, 'text'),
+    campoHTML('Pedido Relacionado','f_pedido_relacionado', f.pedido_relacionado, 'text'),
+    campoHTML('Valor (R$)','f_valor', f.valor, 'text'),
     campoHTML('Data de Abertura','f_data_abertura', f.data_abertura, 'date'),
     campoHTML('Observação','f_observacao', f.observacao, 'textarea')
   ].join('');
@@ -402,6 +445,8 @@ function abrirModalPedido(pedido){
     campoHTML('Setor Responsável','f_setor_responsavel', f.setor_responsavel||'COMPRAS', 'select', ['COMPRAS','MANUTENÇÃO','SGI']),
     campoHTML('Status','f_status_pedido', f.status_pedido||'ABERTO', 'text'),
     campoHTML('Item do Pedido','f_item_pedido', f.item_pedido, 'textarea'),
+    campoHTML('OS Relacionada','f_os_relacionada', f.os_relacionada, 'text'),
+    campoHTML('Valor (R$)','f_valor_pedido', f.valor, 'text'),
     campoHTML('Data de Abertura','f_data_abertura', f.data_abertura, 'date')
   ].join('');
   if(pedido){ document.getElementById('f_numero_pedido').disabled = true; }
@@ -430,6 +475,32 @@ function abrirModalFornecedor(fornecedor){
   document.getElementById('modalOverlay').classList.add('open');
 }
 
+let modalIdRecebimento = null;
+
+function abrirModalRecebimento(recebimento){
+  modalTipo = 'recebimento';
+  modalModo = recebimento ? 'update' : 'create';
+  modalIdRecebimento = recebimento ? recebimento.id : null;
+  document.getElementById('modalTitulo').textContent = recebimento ? 'Editar Recebimento' : 'Novo Recebimento';
+  document.getElementById('modalSub').textContent = recebimento ? 'Altere os campos e salve.' : 'Registre o recebimento de um pedido de compra.';
+  document.getElementById('modalErro').style.display = 'none';
+  const f = recebimento || {};
+  document.getElementById('modalForm').innerHTML = [
+    campoHTML('Número do Pedido','f_numero_pedido_r', f.numero_pedido, 'text'),
+    campoHTML('Número da OS (opcional)','f_numero_os_r', f.numero_os, 'text'),
+    campoHTML('Fornecedor','f_fornecedor', f.fornecedor, 'text'),
+    campoHTML('NF','f_nf', f.nf, 'text'),
+    campoHTML('Data de Recebimento','f_data_recebimento', f.data_recebimento, 'date'),
+    campoHTML('Quantidade Solicitada','f_quantidade_solicitada', f.quantidade_solicitada, 'text'),
+    campoHTML('Quantidade Recebida','f_quantidade_recebida', f.quantidade_recebida, 'text'),
+    campoHTML('Recebimento Parcial?','f_recebimento_parcial', f.recebimento_parcial ? 'Sim' : 'Não', 'select', ['Não','Sim']),
+    campoHTML('Divergência?','f_divergencia', f.divergencia ? 'Sim' : 'Não', 'select', ['Não','Sim']),
+    campoHTML('Responsável','f_responsavel', f.responsavel, 'text'),
+    campoHTML('Observação','f_observacao_r', f.observacao, 'textarea')
+  ].join('');
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
 function fecharModal(){
   document.getElementById('modalOverlay').classList.remove('open');
 }
@@ -449,6 +520,8 @@ async function salvarModal(){
       situacao: document.getElementById('f_situacao').value.trim(),
       setor_responsavel: document.getElementById('f_setor_responsavel').value.trim(),
       placa: document.getElementById('f_placa').value.trim(),
+      pedido_relacionado: document.getElementById('f_pedido_relacionado').value.trim(),
+      valor: parseFloat(document.getElementById('f_valor').value.replace(',','.')) || 0,
       data_abertura: document.getElementById('f_data_abertura').value || null,
       observacao: document.getElementById('f_observacao').value.trim()
     };
@@ -460,9 +533,11 @@ async function salvarModal(){
       setor_responsavel: document.getElementById('f_setor_responsavel').value.trim(),
       status_pedido: document.getElementById('f_status_pedido').value.trim(),
       item_pedido: document.getElementById('f_item_pedido').value.trim(),
+      os_relacionada: document.getElementById('f_os_relacionada').value.trim(),
+      valor: parseFloat(document.getElementById('f_valor_pedido').value.replace(',','.')) || 0,
       data_abertura: document.getElementById('f_data_abertura').value || null
     };
-  } else {
+  } else if(modalTipo === 'fornecedor'){
     action = modalModo === 'create' ? 'create_fornecedor' : 'update_fornecedor';
     body = {
       action,
@@ -476,6 +551,23 @@ async function salvarModal(){
       email: document.getElementById('f_email').value.trim(),
       condicao_pagamento: document.getElementById('f_condicao_pagamento').value.trim(),
       observacao: document.getElementById('f_observacao').value.trim()
+    };
+  } else {
+    action = modalModo === 'create' ? 'create_recebimento' : 'update_recebimento';
+    body = {
+      action,
+      id: modalIdRecebimento,
+      numero_pedido: document.getElementById('f_numero_pedido_r').value.trim(),
+      numero_os: document.getElementById('f_numero_os_r').value.trim(),
+      fornecedor: document.getElementById('f_fornecedor').value.trim(),
+      nf: document.getElementById('f_nf').value.trim(),
+      data_recebimento: document.getElementById('f_data_recebimento').value || null,
+      quantidade_solicitada: document.getElementById('f_quantidade_solicitada').value.trim(),
+      quantidade_recebida: document.getElementById('f_quantidade_recebida').value.trim(),
+      recebimento_parcial: document.getElementById('f_recebimento_parcial').value === 'Sim',
+      divergencia: document.getElementById('f_divergencia').value === 'Sim',
+      responsavel: document.getElementById('f_responsavel').value.trim(),
+      observacao: document.getElementById('f_observacao_r').value.trim()
     };
   }
 
@@ -498,6 +590,7 @@ async function salvarModal(){
     if(modalTipo==='os' && typeof renderOS==='function' && document.getElementById('osTableBody')) renderOS();
     if(modalTipo==='pedido' && typeof renderPedidos==='function' && document.getElementById('pedidoTableBody')) renderPedidos();
     if(modalTipo==='fornecedor' && typeof renderFornecedores==='function' && document.getElementById('fornecedorTableBody')) renderFornecedores();
+    if(modalTipo==='recebimento' && typeof renderRecebimentos==='function' && document.getElementById('recebimentoTableBody')) renderRecebimentos();
   }catch(err){
     if(err.message !== 'Sessão expirada'){
       erroBox.textContent = 'Erro de conexão ao salvar.';
