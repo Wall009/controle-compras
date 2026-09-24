@@ -34,6 +34,7 @@
   <a href="ordens-de-servico.html">🔧 Ordens de Serviço</a>
   <a href="pedidos-de-compra.html">🧾 Pedidos de Compra</a>
   <a href="fornecedores.html">📦 Fornecedores</a>
+  <a href="recebimentos.html">🚚 Recebimentos</a>
   <a href="processo.html">📋 Processo (Fernanda)</a>
   <div class="tag">AA Alternativa · Financeiro</div>
 </div>
@@ -42,12 +43,21 @@
   <p class="page-title">Visão Geral</p>
   <p class="page-sub">Compras, ordens de serviço e pagamentos em um só lugar.</p>
 
+  <div class="filters" style="padding:0 0 16px;border:none;">
+    <input type="month" id="filtroMes" style="max-width:180px;">
+    <button class="btn-nova" onclick="aplicarFiltroMes()">Filtrar</button>
+    <button class="btn-cancelar" style="flex:0;" onclick="limparFiltroMes()">Ver tudo</button>
+  </div>
+
   <div class="cards-grid" id="cardsGrid">
     <div class="card"><div class="card-icon">🛠️</div><div class="card-label">Pedidos — Manutenção</div><div class="card-value" id="c_manutencao">–</div></div>
     <div class="card alt"><div class="card-icon">🛒</div><div class="card-label">Pedidos — Compras</div><div class="card-value" id="c_compras">–</div></div>
     <div class="card"><div class="card-icon">💳</div><div class="card-label">Lançamentos Cartão</div><div class="card-value" id="c_cartao">–</div></div>
     <div class="card alt"><div class="card-icon">📂</div><div class="card-label">OS Abertas</div><div class="card-value" id="c_abertas">–</div></div>
     <div class="card"><div class="card-icon">✅</div><div class="card-label">OS Fechadas</div><div class="card-value" id="c_fechadas">–</div></div>
+    <div class="card alt"><div class="card-icon">💰</div><div class="card-label">Valor em OS</div><div class="card-value" id="c_valor_os" style="font-size:20px;">–</div></div>
+    <div class="card"><div class="card-icon">💰</div><div class="card-label">Valor em Pedidos</div><div class="card-value" id="c_valor_pedidos" style="font-size:20px;">–</div></div>
+    <div class="card alt"><div class="card-icon">💳</div><div class="card-label">Valor no Cartão</div><div class="card-value" id="c_valor_cartao" style="font-size:20px;">–</div></div>
   </div>
 </div>
 
@@ -57,11 +67,20 @@
   <a href="ordens-de-servico.html"><span class="ic">🔧</span>OS</a>
   <a href="pedidos-de-compra.html"><span class="ic">🧾</span>Pedidos</a>
   <a href="fornecedores.html"><span class="ic">📦</span>Fornec.</a>
+  <a href="recebimentos.html"><span class="ic">🚚</span>Receb.</a>
   <a href="processo.html"><span class="ic">📋</span>Processo</a>
 </div>
 
 <script src="assets/app.js"></script>
 <script>
+function aplicarFiltroMes(){
+  const mes = document.getElementById('filtroMes').value;
+  carregarDados(mes || undefined);
+}
+function limparFiltroMes(){
+  document.getElementById('filtroMes').value = '';
+  carregarDados();
+}
 if(getToken()){
   mostrarLogin(false);
   carregarDados();
