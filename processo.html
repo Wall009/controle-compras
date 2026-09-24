@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Processo (Fernanda) | Controle de Compras | AA Alternativa</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="logo-dot">CC</div>
+    <h2>Controle de Compras</h2>
+    <p>Entre com seu usuário para continuar.</p>
+    <div class="login-erro" id="loginErro"></div>
+    <div class="field"><label>Usuário</label><input type="text" id="loginUsuario" autocomplete="username"></div>
+    <div class="field"><label>Senha</label><input type="password" id="loginSenha" autocomplete="current-password"></div>
+    <button id="btnLogin" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-dot">CC</div> Controle de Compras</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="btn-sair" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<div class="sidebar">
+  <a href="index.html">📊 Visão Geral</a>
+  <a href="ordens-de-servico.html">🔧 Ordens de Serviço</a>
+  <a href="pedidos-de-compra.html">🧾 Pedidos de Compra</a>
+  <a href="fornecedores.html">📦 Fornecedores</a>
+  <a href="processo.html" class="active">📋 Processo (Fernanda)</a>
+  <div class="tag">AA Alternativa · Financeiro</div>
+</div>
+
+<div class="content">
+  <p class="page-title">Processo (Fernanda)</p>
+  <p class="page-sub">Solicitações, aprovações e documentos do bot de assinatura no WhatsApp — somente leitura.</p>
+
+  <div class="section">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="mostrarTabProcesso('solicitacoes', this)">Solicitações</button>
+      <button class="tab-btn" onclick="mostrarTabProcesso('aprovacoes', this)">Aprovações</button>
+      <button class="tab-btn" onclick="mostrarTabProcesso('documentos', this)">Documentos</button>
+    </div>
+
+    <div id="subtab-solicitacoes">
+      <div class="filters">
+        <input type="text" id="solicitacaoSearch" placeholder="Buscar por número ou solicitante...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('solicitacao','pedido_numero',this)">Nº Pedido</th>
+            <th class="sortable" onclick="ordenar('solicitacao','nome_solicitante',this)">Solicitante</th>
+            <th class="sortable" onclick="ordenar('solicitacao','status_geral',this)">Status</th>
+            <th>Assinante 1</th>
+            <th>Assinante 2</th>
+            <th class="sortable" onclick="ordenar('solicitacao','criado_em',this)">Criado em</th>
+          </tr></thead>
+          <tbody id="solicitacaoTableBody"></tbody>
+        </table>
+      </div>
+      <div id="solicitacaoEmpty" class="empty" style="display:none;">Nenhuma solicitação encontrada.</div>
+      <div class="pagination" id="solicitacaoPagination"></div>
+    </div>
+
+    <div id="subtab-aprovacoes" style="display:none;">
+      <div class="filters">
+        <input type="text" id="aprovacaoSearch" placeholder="Buscar por número do pedido...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('aprovacao','pedido_numero',this)">Nº Pedido</th>
+            <th class="sortable" onclick="ordenar('aprovacao','status',this)">Status</th>
+            <th class="sortable" onclick="ordenar('aprovacao','criado_em',this)">Criado em</th>
+            <th class="sortable" onclick="ordenar('aprovacao','decidido_em',this)">Decidido em</th>
+          </tr></thead>
+          <tbody id="aprovacaoTableBody"></tbody>
+        </table>
+      </div>
+      <div id="aprovacaoEmpty" class="empty" style="display:none;">Nenhuma aprovação encontrada.</div>
+      <div class="pagination" id="aprovacaoPagination"></div>
+    </div>
+
+    <div id="subtab-documentos" style="display:none;">
+      <div class="filters">
+        <input type="text" id="documentoSearch" placeholder="Buscar por número do pedido ou tipo...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="sortable" onclick="ordenar('documento','pedido_numero',this)">Nº Pedido</th>
+            <th class="sortable" onclick="ordenar('documento','tipo_documento',this)">Tipo</th>
+            <th>Arquivo</th>
+            <th>Enviado por</th>
+            <th class="sortable" onclick="ordenar('documento','enviado_em',this)">Enviado em</th>
+          </tr></thead>
+          <tbody id="documentoTableBody"></tbody>
+        </table>
+      </div>
+      <div id="documentoEmpty" class="empty" style="display:none;">Nenhum documento encontrado.</div>
+      <div class="pagination" id="documentoPagination"></div>
+    </div>
+  </div>
+</div>
+
+
+<div class="bottom-nav">
+  <a href="index.html"><span class="ic">📊</span>Geral</a>
+  <a href="ordens-de-servico.html"><span class="ic">🔧</span>OS</a>
+  <a href="pedidos-de-compra.html"><span class="ic">🧾</span>Pedidos</a>
+  <a href="fornecedores.html"><span class="ic">📦</span>Fornec.</a>
+  <a href="processo.html" class="active"><span class="ic">📋</span>Processo</a>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+document.getElementById('solicitacaoSearch').addEventListener('input', ()=>{estado.solicitacao.pagina=1;renderSolicitacoes();});
+document.getElementById('aprovacaoSearch').addEventListener('input', ()=>{estado.aprovacao.pagina=1;renderAprovacoes();});
+document.getElementById('documentoSearch').addEventListener('input', ()=>{estado.documento.pagina=1;renderDocumentos();});
+if(getToken()){
+  mostrarLogin(false);
+  carregarProcesso();
+} else {
+  mostrarLogin(true);
+}
+</script>
+</body>
+</html>

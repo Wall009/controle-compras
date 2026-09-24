@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fornecedores | Controle de Compras | AA Alternativa</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="logo-dot">CC</div>
+    <h2>Controle de Compras</h2>
+    <p>Entre com seu usuário para continuar.</p>
+    <div class="login-erro" id="loginErro"></div>
+    <div class="field"><label>Usuário</label><input type="text" id="loginUsuario" autocomplete="username"></div>
+    <div class="field"><label>Senha</label><input type="password" id="loginSenha" autocomplete="current-password"></div>
+    <button id="btnLogin" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-dot">CC</div> Controle de Compras</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="refresh-info" id="lastUpdate"></span>
+    <button class="refresh" onclick="carregarDados()">↻ Atualizar</button>
+    <button class="btn-sair" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<div class="sidebar">
+  <a href="index.html">📊 Visão Geral</a>
+  <a href="ordens-de-servico.html">🔧 Ordens de Serviço</a>
+  <a href="pedidos-de-compra.html">🧾 Pedidos de Compra</a>
+  <a href="fornecedores.html" class="active">📦 Fornecedores</a>
+  <a href="processo.html">📋 Processo (Fernanda)</a>
+  <div class="tag">AA Alternativa · Financeiro</div>
+</div>
+
+<div class="content">
+  <p class="page-title">Fornecedores</p>
+  <p class="page-sub">Cadastro de fornecedores da AA Alternativa.</p>
+
+  <div class="section">
+    <div class="filters">
+      <input type="text" id="fornecedorSearch" placeholder="Buscar por razão social ou CNPJ...">
+      <button class="btn-nova" onclick="abrirModalFornecedor()">+ Novo Fornecedor</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th class="sortable" onclick="ordenar('fornecedor','razao_social',this)">Razão Social</th>
+          <th class="sortable" onclick="ordenar('fornecedor','cnpj',this)">CNPJ</th>
+          <th class="sortable" onclick="ordenar('fornecedor','categoria',this)">Categoria</th>
+          <th>Contato</th>
+          <th>Condição Pagto.</th>
+        </tr></thead>
+        <tbody id="fornecedorTableBody"></tbody>
+      </table>
+    </div>
+    <div id="fornecedorEmpty" class="empty" style="display:none;">Nenhum fornecedor cadastrado.</div>
+    <div class="pagination" id="fornecedorPagination"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <h3 id="modalTitulo">Novo</h3>
+    <p class="modal-sub" id="modalSub">Preencha os dados abaixo.</p>
+    <div class="modal-erro" id="modalErro"></div>
+    <form id="modalForm"></form>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn-salvar" id="btnSalvarModal" onclick="salvarModal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <a href="index.html"><span class="ic">📊</span>Geral</a>
+  <a href="ordens-de-servico.html"><span class="ic">🔧</span>OS</a>
+  <a href="pedidos-de-compra.html"><span class="ic">🧾</span>Pedidos</a>
+  <a href="fornecedores.html" class="active"><span class="ic">📦</span>Fornec.</a>
+  <a href="processo.html"><span class="ic">📋</span>Processo</a>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+document.getElementById('fornecedorSearch').addEventListener('input', ()=>{estado.fornecedor.pagina=1;renderFornecedores();});
+if(getToken()){
+  mostrarLogin(false);
+  carregarDados().then(renderFornecedores);
+} else {
+  mostrarLogin(true);
+}
+</script>
+</body>
+</html>

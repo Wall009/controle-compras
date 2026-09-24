@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ordens de Serviço | Controle de Compras | AA Alternativa</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="logo-dot">CC</div>
+    <h2>Controle de Compras</h2>
+    <p>Entre com seu usuário para continuar.</p>
+    <div class="login-erro" id="loginErro"></div>
+    <div class="field"><label>Usuário</label><input type="text" id="loginUsuario" autocomplete="username"></div>
+    <div class="field"><label>Senha</label><input type="password" id="loginSenha" autocomplete="current-password"></div>
+    <button id="btnLogin" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-dot">CC</div> Controle de Compras</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="refresh-info" id="lastUpdate"></span>
+    <button class="refresh" onclick="carregarDados()">↻ Atualizar</button>
+    <button class="btn-sair" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<div class="sidebar">
+  <a href="index.html">📊 Visão Geral</a>
+  <a href="ordens-de-servico.html" class="active">🔧 Ordens de Serviço</a>
+  <a href="pedidos-de-compra.html">🧾 Pedidos de Compra</a>
+  <a href="fornecedores.html">📦 Fornecedores</a>
+  <a href="processo.html">📋 Processo (Fernanda)</a>
+  <div class="tag">AA Alternativa · Financeiro</div>
+</div>
+
+<div class="content">
+  <p class="page-title">Ordens de Serviço</p>
+  <p class="page-sub">Ordens de serviço do sistema Effort com envolvimento de compra.</p>
+
+  <div class="section">
+    <div class="filters">
+      <input type="text" id="osSearch" placeholder="Buscar por número da OS...">
+      <select id="osStatusFilter">
+        <option value="">Todos os status</option>
+        <option value="ABERTA">Aberta</option>
+        <option value="FECHADA">Fechada</option>
+        <option value="CANCELADA">Cancelada</option>
+        <option value="OUTRO_DEPARTAMENTO">Outro departamento</option>
+      </select>
+      <button class="btn-nova" onclick="abrirModalOS()">+ Nova OS</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th class="sortable" onclick="ordenar('os','numero_os',this)">Número OS</th>
+          <th class="sortable" onclick="ordenar('os','status',this)">Status</th>
+          <th class="sortable" onclick="ordenar('os','situacao',this)">Situação</th>
+          <th class="sortable" onclick="ordenar('os','setor_responsavel',this)">Setor</th>
+          <th class="sortable" onclick="ordenar('os','placa',this)">Placa</th>
+          <th class="sortable" onclick="ordenar('os','data_abertura',this)">Abertura</th>
+        </tr></thead>
+        <tbody id="osTableBody"></tbody>
+      </table>
+    </div>
+    <div id="osEmpty" class="empty" style="display:none;">Nenhuma OS encontrada.</div>
+    <div class="pagination" id="osPagination"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <h3 id="modalTitulo">Novo</h3>
+    <p class="modal-sub" id="modalSub">Preencha os dados abaixo.</p>
+    <div class="modal-erro" id="modalErro"></div>
+    <form id="modalForm"></form>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button type="button" class="btn-salvar" id="btnSalvarModal" onclick="salvarModal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <a href="index.html"><span class="ic">📊</span>Geral</a>
+  <a href="ordens-de-servico.html" class="active"><span class="ic">🔧</span>OS</a>
+  <a href="pedidos-de-compra.html"><span class="ic">🧾</span>Pedidos</a>
+  <a href="fornecedores.html"><span class="ic">📦</span>Fornec.</a>
+  <a href="processo.html"><span class="ic">📋</span>Processo</a>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+document.getElementById('osSearch').addEventListener('input', ()=>{estado.os.pagina=1;renderOS();});
+document.getElementById('osStatusFilter').addEventListener('change', ()=>{estado.os.pagina=1;renderOS();});
+if(getToken()){
+  mostrarLogin(false);
+  carregarDados().then(renderOS);
+} else {
+  mostrarLogin(true);
+}
+</script>
+</body>
+</html>
